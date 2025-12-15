@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Магазин одежды</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background:#f5f5f5; font-family: Arial, sans-serif; }
+    header { background:#fff; border-bottom:1px solid #ddd; }
+    .logo { font-weight:700; font-size:20px; }
+    .category-card { cursor:pointer; transition:0.2s; }
+    .category-card:hover { transform:scale(1.03); }
+    .product-card { border:1px solid #ddd; border-radius:8px; padding:15px; background:#fff; }
+    .cart-badge { position:absolute; top:-5px; right:-5px; background:#dc3545; color:#fff; border-radius:50%; padding:2px 6px; font-size:12px; }
+  </style>
+</head>
+<body>
+
+<header class="p-3 mb-4">
+  <div class="container d-flex justify-content-between align-items-center">
+    <div class="logo">Очень крутой магазин одежды</div>
+    <div class="d-flex align-items-center">
+      <span id="userName" class="me-3 fw-bold d-none"></span>
+      <button id="logoutBtn" class="btn btn-outline-danger me-2 d-none" onclick="logout()">Выйти</button>
+      <button id="authBtn" class="btn btn-outline-secondary me-2" onclick="openAuth()">Войти / Регистрация</button>
+      <div class="position-relative">
+        <button class="btn btn-outline-primary" onclick="openCart()">Корзина</button>
+        <span id="cartCount" class="cart-badge">0</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ГЛАВНАЯ -->
+  <div id="home">
+    <div class="row text-center">
+      <div class="col-md-6 mb-4">
+        <div class="category-card card p-5" onclick="openCategory('Мужское')">Мужское</div>
+      </div>
+      <div class="col-md-6 mb-4">
+        <div class="category-card card p-5" onclick="openCategory('Женское')">Женское</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- КАТЕГОРИЯ -->
+  <div id="category" class="d-none">
+    <h3 id="categoryTitle"></h3>
+    <div class="row" id="products"></div>
+    <button class="btn btn-link mt-3" onclick="goHome()">← Назад</button>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal fade" id="authModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <h5>Авторизация / Регистрация</h5>
+      <input id="authEmail" class="form-control mb-2" placeholder="Email">
+      <input id="authPassword" type="password" class="form-control mb-2" placeholder="Пароль">
+      <button class="btn btn-primary w-100" onclick="auth()">Продолжить</button>
+      <div id="authMsg" class="mt-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="modal fade" id="cartModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content p-3">
+      <h5>Корзина</h5>
+      <div id="cartItems"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  let cart = [];
+  let currentUser = localStorage.getItem('user');
+
+  const authModal = new bootstrap.Modal(document.getElementById('authModal'));
+  const cartModal = new bootstrap.Modal(document.getElementById('cartModal'));
+
+  function openCategory(name) {
+    document.getElementById('home').classList.add('d-none');
+    document.getElementById('category').classList.remove('d-none');
+    document.getElementById('categoryTitle').innerText = name;
+
+    const products = document.getElementById('products');
+    products.innerHTML = '';
+
+    const descriptions = [
+      'Стильная модель из новой коллекции, подходит для повседневной носки.',
+      'Комфортная вещь из качественных материалов, актуальный фасон.',
+      'Универсальный дизайн, легко сочетается с другими элементами гардероба.'
+    ];
+
+    for (let i = 1; i <= 3; i++) {
+      products.innerHTML += `
+        <div class="col-md-4 mb-3">
+          <div class="product-card">
+            <h6>${name} товар ${i}</h6>
+            <p>${descriptions[i - 1]}</p>
+            <button class="btn btn-success" onclick="addToCart('${name} товар ${i}')">Добавить в корзину</button>
+          </div>
+        </div>`;
+    }
+  }
+
+  function goHome() {
+    document.getElementById('category').classList.add('d-none');
+    document.getElementById('home').classList.remove('d-none');
+  }
+
+  function addToCart(product) {
+    cart.push(product);
+    document.getElementById('cartCount').innerText = cart.length;
+    alert('Товар добавлен в корзину');
+  }
+
+  function openAuth() {
+    authModal.show();
+  }
+
+  function auth() {
+    const email = document.getElementById('authEmail').value;
+    const pass = document.getElementById('authPassword').value;
+
+    if (!email || !pass) {
+      document.getElementById('authMsg').innerHTML = '<span class="text-danger">Заполните все поля</span>';
+      return;
+    }
+
+    currentUser = email.split('@')[0];
+    localStorage.setItem('user', currentUser);
+    updateUserUI();
+
+    document.getElementById('authMsg').innerHTML = '<span class="text-success">Вы вошли как ' + currentUser + '</span>';
+    setTimeout(() => authModal.hide(), 1000);
+  }
+
+  function logout() {
+    localStorage.removeItem('user');
+    currentUser = null;
+    updateUserUI();
+    alert('Вы вышли из аккаунта');
+  }
+
+  function openCart() {
+    const cartItems = document.getElementById('cartItems');
+    cartItems.innerHTML = cart.length
+      ? cart.map(item => `<div>${item}</div>`).join('')
+      : 'Корзина пуста';
+    cartModal.show();
+  }
+
+  function updateUserUI() {
+    if (currentUser) {
+      document.getElementById('userName').innerText = currentUser;
+      document.getElementById('userName').classList.remove('d-none');
+      document.getElementById('authBtn').classList.add('d-none');
+      document.getElementById('logoutBtn').classList.remove('d-none');
+    } else {
+      document.getElementById('userName').classList.add('d-none');
+      document.getElementById('authBtn').classList.remove('d-none');
+      document.getElementById('logoutBtn').classList.add('d-none');
+    }
+  }
+
+  updateUserUI();
+</script>
+</body>
+</html>
